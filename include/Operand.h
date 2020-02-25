@@ -10,6 +10,8 @@
 #include "IOperand.h"
 #include <iomanip>
 
+#define IS_INTEGER(type_a, type_b) type_a < avm::Float && type_b < avm::Float
+
 namespace avm {
 	template<typename T>
 	class Operand : public IOperand {
@@ -34,9 +36,9 @@ namespace avm {
 		IOperand const * create_type(std::string const &s, eOperandType type) const;
 
 	private:
-		T				_typeVal;
-		eOperandType	_opType;
-		std::string		_strVal;
+		T				_val;
+		eOperandType	_type;
+		std::string		_str;
 	};
 
 	template <typename T>
@@ -63,62 +65,69 @@ namespace avm {
 	}
 
 	template <typename T>
-	Operand<T>::Operand(std::string const &val, avm::eOperandType type): _opType(type) {
+	Operand<T>::Operand(std::string const &val, avm::eOperandType type): _type(type) {
 		auto ld_val = std::stold(val);
 		auto edge_val = std::numeric_limits<T>::max();
 		if (ld_val > edge_val) throw std::string("Overflow");
 		edge_val = type < Float ? std::numeric_limits<T>::min(): -edge_val;
 		if (ld_val < edge_val) throw std::string("Underflow");
 		if (type < Float) {
-			_typeVal = std::stoll(val);
-			_strVal = std::to_string(_typeVal);
+			_val = std::stoll(val);
+			_str = std::to_string(_val);
 		} else {
-			_typeVal = std::stod(val);
+			_val = std::stod(val);
 			std::ostringstream stream;
-			stream << std::setprecision(type == Float ? 7 : 16) << _typeVal;
-			_strVal = stream.str();
+			stream << std::setprecision(type == Float ? 7 : 16) << _val;
+			_str = stream.str();
 		}
 	}
 
 	template <typename T>
 	IOperand const * Operand<T>::operator+(const avm::IOperand &rhs) const {
-
+		if (IS_INTEGER(_type, rhs.getType()))
+			return create_type(std::to_string(_val +  std::stoll(rhs.toString())), rhs.getType());
+		return create_type(std::to_string(_val + std::stod(rhs.toString())), rhs.getType()); // maybe static_cast<long double> needed but not sure
 	}
 
 	template <typename T>
 	IOperand const * Operand<T>::operator-(const avm::IOperand &rhs) const {
-
+		if (IS_INTEGER(_type, rhs.getType()))
+			return create_type(std::to_string(_val - std::stoll(rhs.toString())), rhs.getType());
+		return create_type(std::to_string(_val - std::stod(rhs.toString())), rhs.getType()); // maybe static_cast<long double> needed but not sure
 	}
 
 	template <typename T>
 	IOperand const * Operand<T>::operator*(const avm::IOperand &rhs) const {
-
+		if (IS_INTEGER(_type, rhs.getType()))
+			return create_type(std::to_string(_type * std::stoll(rhs.toString())), rhs.getType());
 	}
 
 	template <typename T>
 	IOperand const * Operand<T>::operator/(const avm::IOperand &rhs) const {
-
+		//if (dynamic_cast<Operand>(rhs)._typeVal == 0) throw std::string("divByZero");
+		if (IS_INTEGER(_type, rhs.getType())){}
 	}
 
 	template <typename T>
 	IOperand const * Operand<T>::operator%(const avm::IOperand &rhs) const {
-
+		//if (dynamic_cast<Operand>(rhs)._typeVal == 0) throw std::string("divByZero");
+		if (IS_INTEGER(_type, rhs.getType())){}
 	}
 
 	template <typename T>
 	int Operand<T>::getPrecision() const {
-		if (_opType < Float) return 0;
-		return _opType == Float ? 7 : 16;
+		if (_type < Float) return 0;
+		return _type == Float ? 7 : 16;
 	}
 
 	template <typename T>
 	eOperandType Operand<T>::getType() const {
-		return _opType;
+		return _type;
 	}
 
 	template <typename T>
 	std::string const & Operand<T>::toString() const {
-		return _strVal;
+		return _str;
 	}
 }
 #endif //AVM_OPERAND_H
