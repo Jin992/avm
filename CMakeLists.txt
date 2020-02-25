@@ -3,4 +3,4 @@ project(AVM)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(AVM main.cpp IOperand.h)
+add_executable(AVM main.cpp include/IOperand.h include/Operand.h)
